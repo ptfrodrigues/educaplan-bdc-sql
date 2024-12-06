@@ -1,0 +1,48 @@
+services:
+  mysql_service:
+    image: mysql:9.1.0
+    container_name: mysql_service
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: educaplan
+      MYSQL_USER: superuser
+      MYSQL_PASSWORD: superuser
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./mysql-service/init-scripts:/docker-entrypoint-initdb.d
+    ports:
+      - "3307:3306"
+    restart: unless-stopped
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -proot || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  phpmyadmin_service:
+    image: phpmyadmin:5.2.1
+    container_name: phpmyadmin_service
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    environment:
+      PMA_HOST: mysql_service
+      MYSQL_ROOT_PASSWORD: root
+    depends_on:
+      - mysql_service
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sSf http://localhost:80/ > /dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  mysql_data:
+
+networks:
+  backend:
+    driver: bridge
